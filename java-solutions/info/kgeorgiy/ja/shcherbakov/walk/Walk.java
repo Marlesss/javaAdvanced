@@ -21,6 +21,7 @@ public class Walk {
 
     private BufferedReader reader;
     private BufferedWriter writer;
+    private MessageDigest digest;
 
     Walk(String inputFile, String outputFile) {
         Path outputPath;
@@ -35,17 +36,23 @@ public class Walk {
             return;
         }
         try (Reader inputReader = new FileReader(inputFile);
-             BufferedReader inputBuffered = new BufferedReader(inputReader);
-             BufferedWriter writerBuffered = Files.newBufferedWriter(outputPath)
-        ) {
-            this.reader = inputBuffered;
-            this.writer = writerBuffered;
-            run();
+             BufferedReader inputBuffered = new BufferedReader(inputReader)) {
+            try (BufferedWriter writerBuffered = Files.newBufferedWriter(outputPath)) {
+                this.reader = inputBuffered;
+                this.writer = writerBuffered;
+                this.digest = MessageDigest.getInstance("SHA-256");
+                run();
+            } catch (FileNotFoundException e) {
+                System.err.println("Output file not found: " + e.getMessage());
+            } catch (IOException e) {
+                System.err.println("Error occurred while working with output file: " + e.getMessage());
+            } catch (NoSuchAlgorithmException e) {
+                System.err.println("Can't work with SHA-256 hashing algorithm: " + e.getMessage());
+            }
         } catch (FileNotFoundException e) {
-            System.err.println("File not found: " + e.getMessage());
+            System.err.println("Input file not found: " + e.getMessage());
         } catch (IOException e) {
-            // :NOTE: разделить чтение и запись
-            System.err.println("Error occurred while opening input/output files: " + e.getMessage());
+            System.err.println("Error occurred while working with input file: " + e.getMessage());
         }
     }
 
@@ -67,7 +74,7 @@ public class Walk {
         } catch (InvalidPathException e) {
             System.err.println("Got invalid path: " + e.getMessage());
             try {
-                writeHash(BigInteger.ZERO, pathString);
+                writeHash(null, pathString);
             } catch (IOException ignored1) {
             }
         }
@@ -81,31 +88,35 @@ public class Walk {
         }
     }
 
-    BigInteger getFileHash(Path path) {
+    byte[] getFileHash(Path path) {
         try (
                 InputStream inputStream = Files.newInputStream(path);
                 BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream)
         ) {
             byte[] buffer = new byte[8192];
             int count;
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.reset();
             while ((count = bufferedInputStream.read(buffer)) > 0) {
                 digest.update(buffer, 0, count);
             }
-            byte[] hash = digest.digest();
-            return new BigInteger(1, hash);
-        } catch (NoSuchAlgorithmException e) {
-            // :NOTE: сообщение об ошибке
-            System.err.println(e.getMessage());
-        } catch (IOException ignored) {
-            // :NOTE: нет сообщения
+            return digest.digest();
+        } catch (IOException e) {
+            System.err.println("Error occurred while calculating hash of file (" + path + "):" + e.getMessage());
         }
-        return BigInteger.ZERO;
+        return null;
     }
 
-    private void writeHash(BigInteger hash, String pathString) throws IOException {
-        // :NOTE: хардкод количества байтов
-        writer.write(String.format("%064x %s", hash, pathString));
+    private void writeHash(byte[] hash, String pathString) throws IOException {
+        if (hash == null) {
+            digest.reset();
+            hash = digest.digest();
+        }
+        StringBuilder stringHash = new StringBuilder();
+        for (byte hashByte : hash) {
+            stringHash.append(String.format("%02x", hashByte));
+        }
+
+        writer.write(String.format("%s %s", stringHash, pathString));
         writer.newLine();
     }
 }
