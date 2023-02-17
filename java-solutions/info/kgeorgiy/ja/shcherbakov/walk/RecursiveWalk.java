@@ -1,11 +1,8 @@
 package info.kgeorgiy.ja.shcherbakov.walk;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.stream.Stream;
 
 public class RecursiveWalk extends Walk {
