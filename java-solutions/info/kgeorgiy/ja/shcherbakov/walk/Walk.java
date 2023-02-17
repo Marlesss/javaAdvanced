@@ -7,6 +7,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 
 public class Walk {
@@ -110,12 +111,12 @@ public class Walk {
         if (hash == null) {
             digest.reset();
             hash = digest.digest();
+            Arrays.fill(hash, (byte) 0);
         }
         StringBuilder stringHash = new StringBuilder();
         for (byte hashByte : hash) {
             stringHash.append(String.format("%02x", hashByte));
         }
-
         writer.write(String.format("%s %s", stringHash, pathString));
         writer.newLine();
     }
