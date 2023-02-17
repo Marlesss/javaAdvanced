@@ -23,8 +23,9 @@ public class Walk {
     private BufferedWriter writer;
 
     Walk(String inputFile, String outputFile) {
+        Path outputPath;
         try {
-            Path outputPath = Path.of(outputFile);
+            outputPath = Path.of(outputFile);
             Path outputDirectory = outputPath.getParent();
             if (outputDirectory != null && !Files.isDirectory(outputDirectory)) {
                 Files.createDirectories(outputDirectory);
@@ -35,7 +36,7 @@ public class Walk {
         }
         try (Reader inputReader = new FileReader(inputFile);
              BufferedReader inputBuffered = new BufferedReader(inputReader);
-             BufferedWriter writerBuffered = Files.newBufferedWriter(Path.of(outputFile))
+             BufferedWriter writerBuffered = Files.newBufferedWriter(outputPath)
         ) {
             this.reader = inputBuffered;
             this.writer = writerBuffered;
@@ -43,6 +44,7 @@ public class Walk {
         } catch (FileNotFoundException e) {
             System.err.println("File not found: " + e.getMessage());
         } catch (IOException e) {
+            // :NOTE: разделить чтение и запись
             System.err.println("Error occurred while opening input/output files: " + e.getMessage());
         }
     }
@@ -93,13 +95,16 @@ public class Walk {
             byte[] hash = digest.digest();
             return new BigInteger(1, hash);
         } catch (NoSuchAlgorithmException e) {
+            // :NOTE: сообщение об ошибке
             System.err.println(e.getMessage());
         } catch (IOException ignored) {
+            // :NOTE: нет сообщения
         }
         return BigInteger.ZERO;
     }
 
     private void writeHash(BigInteger hash, String pathString) throws IOException {
+        // :NOTE: хардкод количества байтов
         writer.write(String.format("%064x %s", hash, pathString));
         writer.newLine();
     }
