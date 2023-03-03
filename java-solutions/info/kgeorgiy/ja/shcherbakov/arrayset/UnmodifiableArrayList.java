@@ -3,6 +3,7 @@ package info.kgeorgiy.ja.shcherbakov.arrayset;
 import java.util.*;
 
 public class UnmodifiableArrayList<E> extends AbstractList<E> implements RandomAccess {
+    static int cntOfGetOps = 0;
     private class UnmodifiableDescendingIterator implements Iterator<E> {
         int cursor = size() - 1;
         int lastRet = -1;
@@ -52,18 +53,22 @@ public class UnmodifiableArrayList<E> extends AbstractList<E> implements RandomA
             list = new ArrayList<>();
         } else {
             // :NOTE: костыль для копии?
-            list = Collections.unmodifiableList(c.stream().toList());
+
+            // ::fixed
+            list = new ArrayList<>(c);
+//            list = Collections.unmodifiableList(c.stream().toList());
         }
         this.reversed = reversed;
     }
 
-    public UnmodifiableArrayList(List<E> list, boolean reversed) {
+    private UnmodifiableArrayList(List<E> list, boolean reversed) {
         this.list = list;
         this.reversed = reversed;
     }
 
     @Override
     public E get(int index) {
+        cntOfGetOps++;
         return list.get(inParentIndex(index));
     }
 

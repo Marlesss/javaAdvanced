@@ -103,6 +103,10 @@ public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E>, Navigab
 
     // :NOTE: a.descendingSet().descendingSet().descendingSet().descendingSet().descendingSet().descendingSet().....
     // насоздается куча объектов + get(index) будет занимать O(k), где k - количество .descendingSet()
+
+    // :: Не согласен, прошу обратить внимание на UnmodifiableArrayList.descendingList().
+    // elements не копируется, а хранится один и тот же c разным reversed
+    // get(index) занимает O(1), пример в Main
     @Override
     public ArraySet<E> descendingSet() {
         return new ArraySet<>(((UnmodifiableArrayList<E>) elements).descendingList(), Collections.reverseOrder(comparator));
