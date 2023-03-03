@@ -3,7 +3,7 @@ package info.kgeorgiy.ja.shcherbakov.arrayset;
 import java.util.*;
 
 public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E>, NavigableSet<E> {
-    public final List<E> elements;
+    private final List<E> elements;
     private final Comparator<? super E> comparator;
 
     public ArraySet() {
@@ -14,6 +14,7 @@ public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E>, Navigab
         this(c, null);
     }
 
+    // :NOTE: коллекция может быть уже отсортирована и без дубликатов
     public ArraySet(Collection<? extends E> c, Comparator<? super E> comparator) {
         if (c == null) {
             elements = new UnmodifiableArrayList<>();
