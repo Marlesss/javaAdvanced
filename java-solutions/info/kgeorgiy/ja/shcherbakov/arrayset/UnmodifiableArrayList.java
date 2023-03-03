@@ -47,12 +47,11 @@ public class UnmodifiableArrayList<E> extends AbstractList<E> implements RandomA
         this(c, false);
     }
 
-    @SuppressWarnings("unchecked")
     public UnmodifiableArrayList(Collection<? extends E> c, boolean reversed) {
         if (c == null) {
             list = new ArrayList<>();
         } else {
-            list = (List<E>) List.of(c.toArray());
+            list = Collections.unmodifiableList(c.stream().toList());
         }
         this.reversed = reversed;
     }

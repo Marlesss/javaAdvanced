@@ -7,7 +7,7 @@ public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E>, Navigab
     private final Comparator<? super E> comparator;
 
     public ArraySet() {
-        this(null, null);
+        this((Collection<? extends E>) null, null);
     }
 
     public ArraySet(Collection<? extends E> c) {
@@ -15,14 +15,15 @@ public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E>, Navigab
     }
 
     public ArraySet(Comparator<? super E> comparator) {
-        this(null, comparator);
+        this((Collection<? extends E>) null, comparator);
     }
 
+    @SuppressWarnings("unchecked")
     public ArraySet(Collection<? extends E> c, Comparator<? super E> comparator) {
         if (c == null) {
             elements = new UnmodifiableArrayList<>();
         } else {
-            if (c instanceof TreeSet) {
+            if (c instanceof SortedSet && ((SortedSet<? extends E>) c).comparator() == comparator) {
                 elements = new UnmodifiableArrayList<>(c);
             } else {
                 TreeSet<E> treeSet = new TreeSet<>(comparator);
