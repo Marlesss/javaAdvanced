@@ -1,7 +1,6 @@
 package info.kgeorgiy.ja.shcherbakov.walk;
 
 import java.io.*;
-import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -76,7 +75,7 @@ public class Walk {
             System.err.println("Got invalid path: " + e.getMessage());
             try {
                 writeHash(null, pathString);
-            } catch (IOException ignored1) {
+            } catch (IOException ignored) {
             }
         }
     }
