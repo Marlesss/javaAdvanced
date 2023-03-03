@@ -101,6 +101,8 @@ public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E>, Navigab
         return elements.iterator();
     }
 
+    // :NOTE: a.descendingSet().descendingSet().descendingSet().descendingSet().descendingSet().descendingSet().....
+    // насоздается куча объектов + get(index) будет занимать O(k), где k - количество .descendingSet()
     @Override
     public ArraySet<E> descendingSet() {
         return new ArraySet<>(((UnmodifiableArrayList<E>) elements).descendingList(), Collections.reverseOrder(comparator));

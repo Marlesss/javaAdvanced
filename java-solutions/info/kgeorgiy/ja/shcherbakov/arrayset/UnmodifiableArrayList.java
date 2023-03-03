@@ -51,6 +51,7 @@ public class UnmodifiableArrayList<E> extends AbstractList<E> implements RandomA
         if (c == null) {
             list = new ArrayList<>();
         } else {
+            // :NOTE: костыль для копии?
             list = Collections.unmodifiableList(c.stream().toList());
         }
         this.reversed = reversed;
