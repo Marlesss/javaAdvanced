@@ -7,21 +7,28 @@ public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E>, Navigab
     private final Comparator<? super E> comparator;
 
     public ArraySet() {
-        this(null);
+        this(null, null);
     }
 
     public ArraySet(Collection<? extends E> c) {
         this(c, null);
     }
 
-    // :NOTE: коллекция может быть уже отсортирована и без дубликатов
+    public ArraySet(Comparator<? super E> comparator) {
+        this(null, comparator);
+    }
+
     public ArraySet(Collection<? extends E> c, Comparator<? super E> comparator) {
         if (c == null) {
             elements = new UnmodifiableArrayList<>();
         } else {
-            TreeSet<E> treeSet = new TreeSet<>(comparator);
-            treeSet.addAll(c);
-            elements = new UnmodifiableArrayList<>(treeSet);
+            if (c instanceof TreeSet) {
+                elements = new UnmodifiableArrayList<>(c);
+            } else {
+                TreeSet<E> treeSet = new TreeSet<>(comparator);
+                treeSet.addAll(c);
+                elements = new UnmodifiableArrayList<>(treeSet);
+            }
         }
         this.comparator = comparator;
     }
