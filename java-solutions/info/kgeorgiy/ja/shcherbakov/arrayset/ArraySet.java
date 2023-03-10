@@ -46,6 +46,7 @@ public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E>, Navigab
     @SuppressWarnings("unchecked")
     private int compare(E a, E b) {
         if (comparator == null) {
+//            return -Collections.reverseOrder().compare(a, b);
             return ((Comparable<E>) a).compareTo(b);
         }
         return comparator.compare(a, b);
@@ -105,7 +106,7 @@ public class ArraySet<E> extends AbstractSet<E> implements SortedSet<E>, Navigab
     // насоздается куча объектов + get(index) будет занимать O(k), где k - количество .descendingSet()
 
     // :: Не согласен, прошу обратить внимание на UnmodifiableArrayList.descendingList().
-    // elements не копируется, а хранится один и тот же c разным reversed
+    // UnmodifiableArrayList.list не копируется, а хранится один и тот же c разным reversed
     // get(index) занимает O(1), пример в Main
     @Override
     public ArraySet<E> descendingSet() {
