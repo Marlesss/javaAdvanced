@@ -42,7 +42,7 @@ public class StudentDB implements GroupQuery {
 
     @Override
     public String getMaxStudentFirstName(List<Student> students) {
-        return students.stream().max(Comparator.comparingInt(Student::getId)).map(Student::getFirstName).orElseThrow();
+        return students.stream().max(Comparator.comparingInt(Student::getId)).map(Student::getFirstName).orElse("");
     }
 
 
@@ -130,7 +130,7 @@ public class StudentDB implements GroupQuery {
     }
 
     private static GroupName largestGroupNameBy(Stream<Group> groupStream, Comparator<Group> comparator) {
-        return groupStream.max(comparator).map(Group::getName).orElseThrow();
+        return groupStream.max(comparator).map(Group::getName).orElse(null);
     }
 
     private static Integer countOfStudents(Group group) {
