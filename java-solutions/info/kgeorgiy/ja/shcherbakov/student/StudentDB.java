@@ -1,6 +1,5 @@
 package info.kgeorgiy.ja.shcherbakov.student;
 
-import info.kgeorgiy.ja.shcherbakov.arrayset.ArraySet;
 import info.kgeorgiy.java.advanced.student.*;
 
 import java.util.*;
@@ -11,33 +10,33 @@ import java.util.stream.Stream;
 
 public class StudentDB implements GroupQuery {
 
-    private <T, R> Stream<R> mapOfList(List<T> list, Function<? super T, R> func) {
-        return list.stream().map(func);
-    }
+    private static final Comparator<Student> NAME_ORDER = Comparator.comparing(Student::getLastName).reversed()
+            .thenComparing(Comparator.comparing(Student::getFirstName).reversed())
+            .thenComparing(Student::getId);
 
     @Override
     public List<String> getFirstNames(List<Student> students) {
-        return mapOfList(students, Student::getFirstName).toList();
+        return students.stream().map(Student::getFirstName).toList();
     }
 
     @Override
     public List<String> getLastNames(List<Student> students) {
-        return mapOfList(students, Student::getLastName).toList();
+        return students.stream().map(Student::getLastName).toList();
     }
 
     @Override
     public List<GroupName> getGroups(List<Student> students) {
-        return mapOfList(students, Student::getGroup).toList();
+        return students.stream().map(Student::getGroup).toList();
     }
 
     @Override
     public List<String> getFullNames(List<Student> students) {
-        return mapOfList(students, (s) -> String.format("%s %s", s.getFirstName(), s.getLastName())).toList();
+        return students.stream().map((s) -> String.format("%s %s", s.getFirstName(), s.getLastName())).toList();
     }
 
     @Override
     public Set<String> getDistinctFirstNames(List<Student> students) {
-        return mapOfList(students, Student::getFirstName).collect(Collectors.toCollection(TreeSet::new));
+        return students.stream().map(Student::getFirstName).collect(Collectors.toCollection(TreeSet::new));
     }
 
     @Override
@@ -54,10 +53,6 @@ public class StudentDB implements GroupQuery {
     public List<Student> sortStudentsById(Collection<Student> students) {
         return sortedList(students.stream(), Student::getId);
     }
-
-    private static final Comparator<Student> NAME_ORDER = Comparator.comparing(Student::getLastName).reversed()
-            .thenComparing(Comparator.comparing(Student::getFirstName).reversed())
-            .thenComparing(Student::getId);
 
     private List<Student> sortedByName(Stream<Student> stream) {
         return stream.sorted(NAME_ORDER).toList();
