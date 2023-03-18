@@ -102,17 +102,11 @@ public class ClassGenerator {
         constructors.forEach(constructor -> generateExecutable(sb, constructor));
     }
 
-    private static class UniqueMethod {
-        public final Method method;
-
-        UniqueMethod(Method method) {
-            this.method = method;
-        }
+    private record UniqueMethod(Method method) {
 
         @Override
         public int hashCode() {
-            return (method.getName().hashCode() * 17 +
-                    method.getReturnType().hashCode()) * 17 +
+            return (method.getName().hashCode() * 31 + method.getReturnType().hashCode()) * 31 +
                     Arrays.hashCode(method.getParameterTypes());
         }
 
