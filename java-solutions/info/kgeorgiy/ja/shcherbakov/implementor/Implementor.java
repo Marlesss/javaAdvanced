@@ -44,6 +44,7 @@ public class Implementor implements Impler {
             throw new ImplerException("Can't implement private token");
         }
 
+        // :NOTE: интерфейсы бывают final?
         if (!token.isInterface() && Modifier.isFinal(mods)) {
             throw new ImplerException("Couldn't extend final class");
         }

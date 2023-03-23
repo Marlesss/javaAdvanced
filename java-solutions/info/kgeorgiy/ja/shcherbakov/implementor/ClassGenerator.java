@@ -77,6 +77,7 @@ public class ClassGenerator {
     }
 
     private void generatePackage(StringBuilder sb) {
+        // :NOTE: что если у имплементируемого класса нет пекеджа?
         sb.append("package ").append(token.getPackage().getName()).append(';').append(LINE_SEP).append(LINE_SEP);
     }
 
@@ -99,6 +100,7 @@ public class ClassGenerator {
         if (constructors.size() == 0) {
             throw new ImplerException("There is no default constructor available");
         }
+        // :NOTE: если у имплементируемого класса сотня конструкторов, тебе не нужны они все
         constructors.forEach(constructor -> generateExecutable(sb, constructor));
     }
 
@@ -106,6 +108,7 @@ public class ClassGenerator {
 
         @Override
         public int hashCode() {
+            // :NOTE: пожалуйста не надо придумывать хешкод самостоятельно, возьми стандартную функцию
             return (method.getName().hashCode() * 31 + method.getReturnType().hashCode()) * 31 +
                     Arrays.hashCode(method.getParameterTypes());
         }
@@ -115,7 +118,6 @@ public class ClassGenerator {
             if (obj == null) {
                 return false;
             }
-
             if (obj instanceof UniqueMethod uniqueMethod) {
                 return method.getName().equals(uniqueMethod.method.getName()) &&
                         method.getReturnType() == uniqueMethod.method.getReturnType() &&
@@ -127,6 +129,7 @@ public class ClassGenerator {
 
     private void generateMethods(StringBuilder sb) {
         Set<UniqueMethod> methods = new HashSet<>();
+        // :NOTE: почему именно Collectors.toCollection(() -> methods) ? чем не понравился более читаемый стандартный вариант?
         Arrays.stream(token.getMethods()).map(UniqueMethod::new).collect(Collectors.toCollection(() -> methods));
         Class<?> tempToken = token;
         while (tempToken != null) {
