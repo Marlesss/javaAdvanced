@@ -3,4 +3,4 @@ package="info.kgeorgiy.ja.shcherbakov.implementor"
 
 cd $home
 
-javadoc -d docs -p  ./../lib -private -version -author --module-source-path myModules:./../modules --module $package
+javadoc -d docs -p  ./java-advanced-2023/lib -private -version -author --module-source-path myModules:./java-advanced-2023/modules --module $package
