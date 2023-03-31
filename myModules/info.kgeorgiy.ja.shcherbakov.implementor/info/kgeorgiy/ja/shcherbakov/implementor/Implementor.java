@@ -33,7 +33,7 @@ public class Implementor implements JarImpler {
     /**
      * Creates new instance of {@link Implementor}
      */
-    Implementor() {
+    public Implementor() {
     }
 
     /**
