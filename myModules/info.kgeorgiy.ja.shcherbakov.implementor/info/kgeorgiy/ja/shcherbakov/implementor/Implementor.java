@@ -80,7 +80,7 @@ public class Implementor implements JarImpler {
                 System.err.println("Error occurred while implementing:" + e.getMessage());
             }
         } catch (ClassNotFoundException e) {
-            System.err.println("Class " + args[0] + " not found: " + e.getMessage());
+            System.err.println("Class " + args[args.length == 2 ? 0 : 1] + " not found: " + e.getMessage());
         } catch (InvalidPathException e) {
             System.err.println("Wrong path: " + e.getMessage());
         }
