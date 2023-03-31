@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"m":"info.kgeorgiy.ja.shcherbakov.implementor","l":"info.kgeorgiy.ja.shcherbakov.implementor"}];updateSearchResults();

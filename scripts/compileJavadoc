@@ -1,0 +1,6 @@
+home=$(dirname $(dirname $(realpath $0)))
+package="info.kgeorgiy.ja.shcherbakov.implementor"
+
+cd $home
+
+javadoc -d docs -p  ./../lib -private -version -author --module-source-path myModules:./../modules --module $package

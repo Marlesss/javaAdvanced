@@ -1,21 +1,16 @@
 package info.kgeorgiy.ja.shcherbakov.implementor;
 
 import info.kgeorgiy.java.advanced.implementor.BaseImplementorTest;
-import info.kgeorgiy.java.advanced.implementor.Impler;
 import info.kgeorgiy.java.advanced.implementor.ImplerException;
 import info.kgeorgiy.java.advanced.implementor.JarImpler;
 
-import javax.swing.*;
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -28,42 +23,102 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 
+/**
+ * Implementation class for {@link JarImpler} interface
+ *
+ * @author SHCHerbakov_Aleksei
+ * @see ClassGenerator
+ */
 public class Implementor implements JarImpler {
+    /**
+     * Creates new instance of {@link Implementor}
+     */
+    Implementor() {
+    }
+
+    /**
+     * Main function which called to implement an abstract class or interface.
+     * <ul>
+     * <li> With 2 arguments {@code className rootPath} executes {@link #implement(Class, Path)}</li>
+     * <li> With 3 arguments {@code -jar className jarPath} executes {@link #implementJar(Class, Path)}</li>
+     * </ul>
+     *
+     * @param args arguments for running an application
+     */
+
     public static void main(String[] args) {
         if (args == null || args.length < 2 || 3 < args.length || args[0] == null || args[1] == null) {
             System.err.println("Wrong arguments");
-            System.err.println("2 args to generate implemented java file: className rootPath");
-            System.err.println("3 args to generate implemented jar file: -jar className filePath.jar");
+            System.err.println("Pass 2 args to generate implemented java file: className rootPath");
+            System.err.println("Pass 3 args to generate implemented jar file: -jar className filePath.jar");
             return;
         }
+        if (args.length == 3) {
+            if (!args[0].equals("-jar")) {
+                System.err.println("With 3 arguments passed first argument must be \"-jar\"");
+                System.err.println("Pass 3 args to generate implemented jar file: -jar className filePath.jar");
+                return;
+            }
+        }
 
-        // TODO: add 3 args main
         try {
-            Class<?> token = Class.forName(args[0]);
-            new Implementor().implement(token, Paths.get(args[1]));
-            compile(token, Paths.get(args[1]));
+            Class<?> token = Class.forName(args[args.length == 2 ? 0 : 1]);
+            Path path = Paths.get(args[args.length == 2 ? 1 : 2]);
+            try {
+                Implementor implementor = new Implementor();
+                if (args.length == 2) {
+                    implementor.implement(token, path);
+                } else {
+                    implementor.implementJar(token, path);
+                }
+            } catch (ImplerException e) {
+                System.err.println("Error occurred while implementing:" + e.getMessage());
+            }
         } catch (ClassNotFoundException e) {
             System.err.println("Class " + args[0] + " not found: " + e.getMessage());
         } catch (InvalidPathException e) {
             System.err.println("Wrong path: " + e.getMessage());
-        } catch (ImplerException e) {
-            System.err.println("Error occurred while implementing:" + e.getMessage());
         }
     }
 
+    /**
+     * Creates directories on way to {@code path}
+     *
+     * @param toPath the path for which you want to create directories
+     * @return {@code true} if successfully created directories on the path to {@code toPath}; {@code false} otherwise
+     */
     private static boolean createDirectoriesOnWay(Path toPath) {
         try {
             Path toPathParent = toPath.getParent();
             if (toPathParent != null) {
                 Files.createDirectories(toPathParent);
-                return true;
             }
+            return true;
         } catch (IOException e) {
             System.err.println("Can't create directories on way to " + toPath);
         }
         return false;
     }
 
+    /**
+     * Produces code implementing class or interface specified by provided {@code token}.
+     * Generated class' name is the same as the class name of the type token with {@code Impl} suffix.
+     * Generated source code is placed in the subdirectory of the specified {@code root} directory.
+     * For example, the implementation of the interface {@link java.util.List} would
+     * go to {@code $root/java/util/ListImpl.java}
+     *
+     * @param token type token to create implementation for.
+     * @param root  root directory.
+     * @throws info.kgeorgiy.java.advanced.implementor.ImplerException when implementation cannot be
+     *                                                                 generated for one of these reasons:
+     *                                                                 <ul>
+     *                                                                 <li> Given {@code class} is primitive or array. </li>
+     *                                                                 <li> Given {@code class} is private. </li>
+     *                                                                 <li> Given {@code class} is final class. </li>
+     *                                                                 <li> Given {@code class} is {@link Enum}. </li>
+     *                                                                 <li> {@link ClassGenerator#generate()} failed to generate source </li>
+     *                                                                 </ul>
+     */
     @Override
     public void implement(Class<?> token, Path root) throws ImplerException {
         int mods = token.getModifiers();
@@ -101,6 +156,18 @@ public class Implementor implements JarImpler {
         }
     }
 
+    /**
+     * Compiles {@code .class} files for {@code .java} files of given {@link Class} {@code token}.
+     *
+     * @param token   type token to compile.
+     * @param tempDir directory with related {@code .java} files.
+     * @throws ImplerException when the given {@link Class} {@code token} can not be compiled for one of these reasons:
+     *                         <ul>
+     *                         <li> Could not find java compiler. </li>
+     *                         <li> {@link #getClassPath(Class)} failed to getting classPath. </li>
+     *                         <li> Compiler exit code is not {@code 0}. </li>
+     *                         </ul>
+     */
     private static void compile(Class<?> token, Path tempDir) throws ImplerException {
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         if (compiler == null) {
@@ -121,12 +188,27 @@ public class Implementor implements JarImpler {
         }
     }
 
+    /**
+     * Returns a path to implementation file of given {@link Class} {@code token}.
+     *
+     * @param token {@link Class} to get path.
+     * @param root  root directory.
+     * @param tail  file extension.
+     * @return {@link Path} to implementation file.
+     */
     private static Path getFilePath(Class<?> token, Path root, String tail) {
         return root.resolve(token.getPackageName().replace('.', File.separatorChar))
                 .resolve(ClassGenerator.getClassName(token) + tail);
     }
 
 
+    /**
+     * Getting the class path of given {@link Class} {@code token}.
+     *
+     * @param token {@link Class} to get class path
+     * @return class path of given {@link Class} {@code token}
+     * @throws ImplerException if failed getting the class path
+     */
     private static String getClassPath(Class<?> token) throws ImplerException {
         try {
             CodeSource codeSource = token.getProtectionDomain().getCodeSource();
@@ -139,6 +221,23 @@ public class Implementor implements JarImpler {
         }
     }
 
+    /**
+     * Produces {@code jar} file implementing class or interface specified by provided {@code token}.
+     * <p>
+     * During implementation creates temporary folder with generated {@code .java} and {@code .class} files.
+     * Informs user if fails to delete temporary folder.
+     *
+     * @param token   type token to create implementation for.
+     * @param jarFile generated {@code jar} file path.
+     * @throws ImplerException when implementation cannot be
+     *                         generated for one of these reasons:
+     *                         <ul>
+     *                         <li> Failed to create temporary directory. </li>
+     *                         <li> Failed to implement given {@link Class} {@code token} in {@link #implement(Class, Path)} </li>
+     *                         <li> Failed to compile generated sources in {@link #compile(Class, Path)} </li>
+     *                         <li> The problems with I/O occurred during implementation. </li>
+     *                         </ul>
+     */
     @Override
     public void implementJar(Class<?> token, Path jarFile) throws ImplerException {
         if (!createDirectoriesOnWay(jarFile)) {
