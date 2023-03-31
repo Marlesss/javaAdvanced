@@ -47,7 +47,8 @@ public class Implementor implements JarImpler {
      */
 
     public static void main(String[] args) {
-        if (args == null || args.length < 2 || 3 < args.length || args[0] == null || args[1] == null) {
+        if (args == null || args.length < 2 || args[0] == null || args[1] == null ||
+                args.length == 3 && args[2] == null) {
             System.err.println("Wrong arguments");
             System.err.println("Pass 2 args to generate implemented java file: className rootPath");
             System.err.println("Pass 3 args to generate implemented jar file: -jar className filePath.jar");
