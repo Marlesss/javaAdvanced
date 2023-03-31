@@ -1,1 +1,0 @@
-typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"info.kgeorgiy.ja.shcherbakov.implementor","l":"ClassGenerator"},{"p":"info.kgeorgiy.ja.shcherbakov.implementor","l":"Implementor"},{"p":"info.kgeorgiy.ja.shcherbakov.implementor","l":"ClassGenerator.UniqueMethod"}];updateSearchResults();

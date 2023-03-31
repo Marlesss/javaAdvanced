@@ -1,7 +1,7 @@
 home=$(dirname $(dirname $(realpath $0)))
 package="info.kgeorgiy.ja.shcherbakov.implementor"
 cd $home
-javac -d outDir -p ./java-advanced-2023/lib --module-source-path myModules:./java-advanced-2023/modules:./java-advanced-2023/lib --module $package
+javac -d outDir -p ./java-advanced-2023/lib --module-source-path java-solutions:./java-advanced-2023/modules:./java-advanced-2023/lib --module $package
 
 cd outDir
 cd $package
