@@ -246,10 +246,10 @@ public class ClassGenerator {
     private void generateMethods(StringBuilder sb) {
         Set<UniqueMethod> methods = new HashSet<>();
         // :NOTE: почему именно Collectors.toCollection(() -> methods) ? чем не понравился более читаемый стандартный вариант?
-        Arrays.stream(token.getMethods()).map(UniqueMethod::new).collect(Collectors.toCollection(() -> methods));
-//        for (Method m : token.getMethods()) {
-//            methods.add(new UniqueMethod(m));
-//        }
+//        Arrays.stream(token.getMethods()).map(UniqueMethod::new).collect(Collectors.toCollection(() -> methods));
+        for (Method m : token.getMethods()) {
+            methods.add(new UniqueMethod(m));
+        }
 
         Class<?> tempToken = token;
         while (tempToken != null) {
