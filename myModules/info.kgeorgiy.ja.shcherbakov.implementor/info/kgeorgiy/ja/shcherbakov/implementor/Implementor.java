@@ -59,6 +59,10 @@ public class Implementor implements JarImpler {
                 System.err.println("Pass 3 args to generate implemented jar file: -jar className filePath.jar");
                 return;
             }
+            if (!args[2].endsWith(".jar")) {
+                System.err.println("With 3 arguments passed third argument must be with .jar extension");
+                return;
+            }
         }
 
         try {
