@@ -1,0 +1,9 @@
+home=$(dirname $(dirname $(realpath $0)))
+package="info.kgeorgiy.ja.shcherbakov.implementor"
+cd $home
+javac -d outDir -p ./../modules:./../lib:./../artifacts --module-source-path myModules --module $package
+
+cd outDir
+cd $package
+classes=$(find . | grep ".class$")
+jar cfm $home/Implementor.jar $home/scripts/MANIFEST.MF $classes
