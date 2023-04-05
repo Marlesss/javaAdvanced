@@ -1,9 +1,12 @@
-home=$(dirname $(dirname $(realpath $0)))
-package="info.kgeorgiy.ja.shcherbakov.implementor"
-cd $home
-javac -d outDir -p ./java-advanced-2023/lib --module-source-path java-solutions:./java-advanced-2023/modules:./java-advanced-2023/lib --module $package
-
-cd outDir
-cd $package
+root=$(dirname $(dirname $(realpath $0)))
+lib="$root/java-advanced-2023/lib"
+artifacts="$root/java-advanced-2023/artifacts"
+packageName="info.kgeorgiy.ja.shcherbakov"
+packagePath="$root/java-solutions/info/kgeorgiy/ja/shcherbakov/implementor"
+cd $root
+javac -d outDir/$packageName --module-path $lib:$artifacts ./java-solutions/module-info.java \
+                                                           $packagePath/Implementor.java \
+                                                           $packagePath/ClassGenerator.java
+cd outDir/$packageName
 classes=$(find . | grep ".class$")
-jar cfm $home/Implementor.jar $home/scripts/MANIFEST.MF $classes
+jar cfm $root/Implementor.jar $root/scripts/MANIFEST.MF $classes
