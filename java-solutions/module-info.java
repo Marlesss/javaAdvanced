@@ -1,6 +1,7 @@
 module info.kgeorgiy.ja.shcherbakov {
     requires info.kgeorgiy.java.advanced.student;
     requires info.kgeorgiy.java.advanced.implementor;
+    requires info.kgeorgiy.java.advanced.concurrent;
 
     requires java.compiler;
     requires java.desktop;
