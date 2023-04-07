@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -186,7 +187,8 @@ public class Implementor implements JarImpler {
             args.add("-cp");
             args.add(classPath);
         }
-
+        args.add("-encoding");
+        args.add(StandardCharsets.UTF_8.toString());
         int exitCode = compiler.run(null, null, null, args.toArray(String[]::new));
         if (exitCode != 0) {
             throw new ImplerException("Compiler exit code: " + exitCode);
