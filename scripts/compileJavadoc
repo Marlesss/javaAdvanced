@@ -1,6 +1,0 @@
-home=$(dirname $(dirname $(realpath $0)))
-package="info.kgeorgiy.ja.shcherbakov.implementor"
-
-cd $home
-
-javadoc -d javadoc -p  ./java-advanced-2023/lib -private -version -author --module-source-path java-solutions:./java-advanced-2023/modules --module $package
