@@ -1,60 +1,82 @@
 package info.kgeorgiy.ja.shcherbakov.concurrent;
 
 import info.kgeorgiy.java.advanced.concurrent.ListIP;
+import info.kgeorgiy.java.advanced.mapper.ParallelMapper;
 
 import java.util.*;
 import java.util.function.*;
 
 public class IterativeParallelism implements ListIP {
+    private final ParallelMapper parallelMapper;
+
+    public IterativeParallelism() {
+        this(null);
+    }
+
+    public IterativeParallelism(ParallelMapper parallelMapper) {
+        this.parallelMapper = parallelMapper;
+    }
+
     private static <K, V> Map.Entry<K, V> makeMapEntry(K key, V val) {
         return new AbstractMap.SimpleImmutableEntry<>(key, val);
     }
 
-    private static <T, R> Thread makeThreadForEach(List<? extends T> values, int offset, int actionCount, Supplier<R> initResult,
-                                                   BiFunction<R, T, Map.Entry<R, Boolean>> action, Consumer<R> handleResult) {
-        return new Thread(() -> {
+    private static <T, R> Function<List<? extends T>, ? extends R> getHandler(Supplier<R> initResult,
+                                                                              BiFunction<R, T, Map.Entry<R, Boolean>> action) {
+        return (values) -> {
             R result = initResult.get();
-            for (int i = 0; i < actionCount && i + offset < values.size(); i++) {
+            for (T current : values) {
                 if (Thread.interrupted()) {
                     Thread.currentThread().interrupt();
-                    return;
+                    return result;
                 }
-                T current = values.get(i + offset);
                 Map.Entry<R, Boolean> actionResult = action.apply(result, current);
                 result = actionResult.getKey();
                 if (actionResult.getValue()) {
-                    handleResult.accept(result);
-                    return;
+                    return result;
                 }
             }
-            handleResult.accept(result);
-        });
+            return result;
+        };
     }
 
-    private static <T, R> R parallelizeWork(int threads, List<? extends T> values,
-                                            Supplier<R> initResult,
-                                            BiFunction<R, T, Map.Entry<R, Boolean>> threadAction,
-                                            BiFunction<R, R, Map.Entry<R, Boolean>> mergeResult) throws InterruptedException {
+    private <T, R> R parallelizeWork(int threads, List<? extends T> values,
+                                     Supplier<R> initResult,
+                                     BiFunction<R, T, Map.Entry<R, Boolean>> threadAction,
+                                     BiFunction<R, R, Map.Entry<R, Boolean>> mergeResult) throws InterruptedException {
         if (threads > values.size()) {
             threads = values.size();
         }
-        Thread[] threadsArr = new Thread[threads];
-        List<R> result = new ArrayList<>(Collections.nCopies(threads, null));
+        List<R> result;
+        List<List<? extends T>> pieces = new ArrayList<>(threads);
         int offset = 0;
         for (int i = 0; i < threads; i++) {
             int actionCount = (values.size() - offset) / (threads - i);
-            int index = i;
-            threadsArr[i] = makeThreadForEach(values, offset, actionCount, initResult, threadAction,
-                    (res) -> result.set(index, res));
-            threadsArr[i].start();
+            pieces.add(values.subList(offset, offset + actionCount));
             offset += actionCount;
         }
+
+        if (parallelMapper != null) {
+            result = parallelMapper.map(getHandler(initResult, threadAction), pieces);
+        } else {
+            result = new ArrayList<>(Collections.nCopies(threads, null));
+            Thread[] threadsArr = new Thread[threads];
+            for (int i = 0; i < threads; i++) {
+                int index = i;
+                threadsArr[i] = new Thread(() -> result.set(index,
+                        getHandler(initResult, threadAction).apply(pieces.get(index))));
+                threadsArr[i].start();
+            }
+            for (int i = 0; i < threads; i++) {
+                threadsArr[i].join();
+                if (threadsArr[i].isInterrupted()) {
+                    throw new InterruptedException();
+                }
+            }
+        }
+
         R answer = initResult.get();
         for (int i = 0; i < threads; i++) {
-            threadsArr[i].join();
-            if (threadsArr[i].isInterrupted()) {
-                throw new InterruptedException();
-            }
             Map.Entry<R, Boolean> merge = mergeResult.apply(answer, result.get(i));
             answer = merge.getKey();
             if (merge.getValue()) {
@@ -100,15 +122,7 @@ public class IterativeParallelism implements ListIP {
 
     @Override
     public <T> boolean any(int threads, List<? extends T> values, Predicate<? super T> predicate) throws InterruptedException {
-        BiFunction<Boolean, Boolean, Map.Entry<Boolean, Boolean>> anyMerge = (res, val) -> {
-            if (val) {
-                return makeMapEntry(true, true);
-            }
-            return makeMapEntry(false, false);
-        };
-        return parallelizeWork(threads, values, () -> false,
-                (res, val) -> anyMerge.apply(res, predicate.test(val)),
-                anyMerge);
+        return !all(threads, values, predicate.negate());
     }
 
     @Override
