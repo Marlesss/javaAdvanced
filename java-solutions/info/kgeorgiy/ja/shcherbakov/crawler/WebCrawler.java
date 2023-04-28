@@ -11,7 +11,7 @@ public class WebCrawler implements AdvancedCrawler {
     private final int perHost;
 
     private final ExecutorService downloadService, extractService;
-    private final ConcurrentMap<String, Semaphore> hostSemaphores = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Loader> hostSemaphores = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
         if (args == null || args.length < 1 || args.length > 4) {
@@ -67,6 +67,34 @@ public class WebCrawler implements AdvancedCrawler {
     }
 
 
+    private class Loader {
+        final Deque<Runnable> tasks = new ArrayDeque<>();
+        int running = 0;
+
+        private synchronized void addTask(Runnable task) {
+            if (running >= perHost) {
+                tasks.push(task);
+            } else {
+                runTask(task);
+            }
+        }
+
+        private synchronized void runTask(Runnable task) {
+            running++;
+            downloadService.submit(() -> {
+                task.run();
+                taskFinished();
+            });
+        }
+
+        private synchronized void taskFinished() {
+            running--;
+            if (!tasks.isEmpty()) {
+                runTask(tasks.pop());
+            }
+        }
+    }
+
     private void concurrentDownload(String url, int depth, Set<String> success, Map<String, IOException> errors,
                                     Set<String> usedLinks, Phaser phaser, List<String> requiredHosts) {
         try {
@@ -74,17 +102,15 @@ public class WebCrawler implements AdvancedCrawler {
             if (requiredHosts != null && !requiredHosts.contains(host)) {
                 return;
             }
-            hostSemaphores.putIfAbsent(host, new Semaphore(perHost));
             phaser.register();
-            downloadService.submit(() -> {
-                Semaphore semaphore = hostSemaphores.get(host);
+            hostSemaphores.computeIfAbsent(host, h -> new Loader()).addTask(() ->
+            {
                 try {
-                    semaphore.acquire();
                     Document document = downloader.download(url);
-                    semaphore.release();
                     success.add(url);
                     if (depth > 1) {
                         phaser.register();
+
                         extractService.submit(() -> {
                             try {
                                 for (String inner : document.extractLinks()) {
@@ -101,14 +127,10 @@ public class WebCrawler implements AdvancedCrawler {
                     }
                 } catch (IOException e) {
                     errors.put(url, e);
-                    semaphore.release();
-                } catch (InterruptedException ignored) {
                 } finally {
                     phaser.arrive();
                 }
-
             });
-
         } catch (IOException e) {
             errors.put(url, e);
         }
