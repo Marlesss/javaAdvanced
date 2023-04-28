@@ -11,7 +11,7 @@ public class WebCrawler implements AdvancedCrawler {
     private final int perHost;
 
     private final ExecutorService downloadService, extractService;
-    private final ConcurrentMap<String, Loader> hostSemaphores = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Semaphore> hostSemaphores = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
         if (args == null || args.length < 1 || args.length > 4) {
@@ -102,15 +102,21 @@ public class WebCrawler implements AdvancedCrawler {
             if (requiredHosts != null && !requiredHosts.contains(host)) {
                 return;
             }
+            hostSemaphores.putIfAbsent(host, new Semaphore(perHost));
             phaser.register();
-            hostSemaphores.computeIfAbsent(host, h -> new Loader()).addTask(() ->
-            {
+            downloadService.submit(() -> {
+                Semaphore semaphore = hostSemaphores.get(host);
                 try {
-                    Document document = downloader.download(url);
+                    Document document;
+                    try {
+                        semaphore.acquire();
+                        document = downloader.download(url);
+                    } finally {
+                        semaphore.release();
+                    }
                     success.add(url);
                     if (depth > 1) {
                         phaser.register();
-
                         extractService.submit(() -> {
                             try {
                                 for (String inner : document.extractLinks()) {
@@ -127,10 +133,14 @@ public class WebCrawler implements AdvancedCrawler {
                     }
                 } catch (IOException e) {
                     errors.put(url, e);
+                } catch (InterruptedException e) {
+                    System.err.println("Unexpected error occurred while extracting links: " + e.getMessage());
                 } finally {
                     phaser.arrive();
                 }
+
             });
+
         } catch (IOException e) {
             errors.put(url, e);
         }
