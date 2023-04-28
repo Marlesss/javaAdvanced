@@ -31,7 +31,7 @@ public class WebCrawler implements AdvancedCrawler {
                 webCrawler.download(url, depth);
             }
         } catch (IOException e) {
-            System.out.println("Unable to create of CachingDownloader: " + e.getMessage());
+            System.out.println("Error occurred during init of CachingDownloader: " + e.getMessage());
         }
     }
 
