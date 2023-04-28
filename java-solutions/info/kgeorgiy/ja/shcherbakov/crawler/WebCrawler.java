@@ -13,13 +13,33 @@ public class WebCrawler implements AdvancedCrawler {
     private final ExecutorService downloadService, extractService;
     private final ConcurrentMap<String, Semaphore> hostSemaphores = new ConcurrentHashMap<>();
 
-    public static void main(String[] args) throws IOException {
-        Downloader downloader11 = new ReplayDownloader("http://www.kgeorgiy.info", 1, 1);
-        WebCrawler webCrawler = new WebCrawler(downloader11, 4, 4, 4);
-        Result result = webCrawler.download("http://www.kgeorgiy.info", 5);
-        System.out.println(result.getDownloaded().size());
-        System.out.println(result.getErrors().size());
-        webCrawler.close();
+    public static void main(String[] args) {
+        if (args == null || args.length < 1 || args.length > 4) {
+            System.err.println("WebCrawler url [downloaders [extractors [perHost]]]");
+            return;
+        }
+
+        int downloaders = getOrDefault(args, 1, 16);
+        int extractors = getOrDefault(args, 2, 16);
+        int perHost = getOrDefault(args, 3, 4);
+        int depth = getOrDefault(args, 4, 2);
+        String url = args[0];
+
+        try {
+            Downloader downloader = new CachingDownloader(1);
+            try (WebCrawler webCrawler = new WebCrawler(downloader, downloaders, extractors, perHost)) {
+                webCrawler.download(url, depth);
+            }
+        } catch (IOException e) {
+            System.out.println("Unable to create of CachingDownloader: " + e.getMessage());
+        }
+    }
+
+    private static int getOrDefault(String[] args, int i, int defaultValue) {
+        if (args.length >= i) {
+            return defaultValue;
+        }
+        return Integer.parseInt(args[i]);
     }
 
     public WebCrawler(Downloader downloader, int downloaders, int extractors, int perHost) {
