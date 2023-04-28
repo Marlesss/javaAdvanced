@@ -43,7 +43,6 @@ public class ParallelMapperImpl implements ParallelMapper {
         synchronized (jobsQueue) {
             for (int i = 0; i < args.size(); i++) {
                 int finalI = i;
-//                synchronized (jobsQueue) {
                     jobsQueue.add(() -> {
                         R res = f.apply(args.get(finalI));
                         if (Thread.interrupted()) {
@@ -53,8 +52,6 @@ public class ParallelMapperImpl implements ParallelMapper {
                         }
                         result.set(finalI, res);
                     });
-//                    jobsQueue.notify();
-//                }
             }
             jobsQueue.notifyAll();
         }
