@@ -15,19 +15,19 @@ public class WebCrawler implements AdvancedCrawler {
 
     public static void main(String[] args) {
         if (args == null || args.length < 1 || args.length > 4) {
-            System.err.println("WebCrawler url [downloaders [extractors [perHost]]]");
+            System.err.println("WebCrawler url [depth [downloads [extractors [perHost]]]]");
             return;
         }
 
-        int downloaders = getOrDefault(args, 1, 16);
-        int extractors = getOrDefault(args, 2, 16);
-        int perHost = getOrDefault(args, 3, 4);
-        int depth = getOrDefault(args, 4, 2);
         String url = args[0];
+        int depth = getOrDefault(args, 1, 2);
+        int downloads = getOrDefault(args, 2, 16);
+        int extractors = getOrDefault(args, 3, 16);
+        int perHost = getOrDefault(args, 4, 4);
 
         try {
             Downloader downloader = new CachingDownloader(1);
-            try (WebCrawler webCrawler = new WebCrawler(downloader, downloaders, extractors, perHost)) {
+            try (WebCrawler webCrawler = new WebCrawler(downloader, downloads, extractors, perHost)) {
                 webCrawler.download(url, depth);
             }
         } catch (IOException e) {
