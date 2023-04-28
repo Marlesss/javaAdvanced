@@ -36,7 +36,7 @@ public class WebCrawler implements AdvancedCrawler {
     }
 
     private static int getOrDefault(String[] args, int i, int defaultValue) {
-        if (args.length >= i) {
+        if (args.length <= i) {
             return defaultValue;
         }
         return Integer.parseInt(args[i]);
@@ -64,35 +64,6 @@ public class WebCrawler implements AdvancedCrawler {
         concurrentDownload(url, depth, success, errors, usedLinks, phaser, hosts);
         phaser.arriveAndAwaitAdvance();
         return new Result(new ArrayList<>(success), errors);
-    }
-
-
-    private class Loader {
-        final Deque<Runnable> tasks = new ArrayDeque<>();
-        int running = 0;
-
-        private synchronized void addTask(Runnable task) {
-            if (running >= perHost) {
-                tasks.push(task);
-            } else {
-                runTask(task);
-            }
-        }
-
-        private synchronized void runTask(Runnable task) {
-            running++;
-            downloadService.submit(() -> {
-                task.run();
-                taskFinished();
-            });
-        }
-
-        private synchronized void taskFinished() {
-            running--;
-            if (!tasks.isEmpty()) {
-                runTask(tasks.pop());
-            }
-        }
     }
 
     private void concurrentDownload(String url, int depth, Set<String> success, Map<String, IOException> errors,
