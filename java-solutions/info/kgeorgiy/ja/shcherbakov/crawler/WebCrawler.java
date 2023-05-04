@@ -5,13 +5,9 @@ import info.kgeorgiy.java.advanced.crawler.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 public class WebCrawler implements AdvancedCrawler {
-    private final Downloader downloader;
-    private final int perHost;
-
-    private final ExecutorService downloadService, extractService;
-    private final ConcurrentMap<String, Semaphore> hostSemaphores = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
         if (args == null || args.length < 1 || args.length > 4) {
@@ -21,8 +17,8 @@ public class WebCrawler implements AdvancedCrawler {
 
         String url = args[0];
         int depth = getOrDefault(args, 1, 2);
-        int downloads = getOrDefault(args, 2, 16);
-        int extractors = getOrDefault(args, 3, 16);
+        int downloads = getOrDefault(args, 2, 8);
+        int extractors = getOrDefault(args, 3, 7);
         int perHost = getOrDefault(args, 4, 4);
 
         try {
@@ -31,7 +27,7 @@ public class WebCrawler implements AdvancedCrawler {
                 webCrawler.download(url, depth);
             }
         } catch (IOException e) {
-            System.out.println("Error occurred during init of CachingDownloader: " + e.getMessage());
+            System.err.println("Error occurred during init of CachingDownloader: " + e.getMessage());
         }
     }
 
@@ -44,7 +40,7 @@ public class WebCrawler implements AdvancedCrawler {
 
     public WebCrawler(Downloader downloader, int downloaders, int extractors, int perHost) {
         this.downloader = downloader;
-        this.perHost = perHost;
+        this.hostDownloadsLimit = perHost;
         downloadService = Executors.newFixedThreadPool(downloaders);
         extractService = Executors.newFixedThreadPool(extractors);
     }
@@ -58,69 +54,89 @@ public class WebCrawler implements AdvancedCrawler {
     public Result download(String url, int depth, List<String> hosts) {
         Set<String> success = ConcurrentHashMap.newKeySet();
         ConcurrentMap<String, IOException> errors = new ConcurrentHashMap<>();
-        Set<String> usedLinks = ConcurrentHashMap.newKeySet();
-        usedLinks.add(url);
-        Phaser phaser = new Phaser(1);
-        concurrentDownload(url, depth, success, errors, usedLinks, phaser, hosts);
-        phaser.arriveAndAwaitAdvance();
+        ConcurrentMap<String, Boolean> usedUrls = new ConcurrentHashMap<>();
+        Set<String> urlQueue = Set.of(url);
+        breadthDownload(urlQueue, depth, hosts, usedUrls, success, errors);
         return new Result(new ArrayList<>(success), errors);
     }
 
-    private void concurrentDownload(String url, int depth, Set<String> success, Map<String, IOException> errors,
-                                    Set<String> usedLinks, Phaser phaser, List<String> requiredHosts) {
-        try {
-            String host = URLUtils.getHost(url);
-            if (requiredHosts != null && !requiredHosts.contains(host)) {
-                return;
-            }
-            hostSemaphores.putIfAbsent(host, new Semaphore(perHost));
+    private void breadthDownload(final Set<String> urlQueue,
+                                 final int depth,
+                                 final List<String> hosts,
+                                 final ConcurrentMap<String, Boolean> usedUrls,
+                                 final Set<String> success,
+                                 final ConcurrentMap<String, IOException> errors) {
+        Set<String> extracted = ConcurrentHashMap.newKeySet();
+        Phaser phaser = new Phaser(1);
+        for (String url : urlQueue) {
+            usedUrls.put(url, true);
             phaser.register();
-            downloadService.submit(() -> {
-                Semaphore semaphore = hostSemaphores.get(host);
-                try {
-                    Document document;
-                    try {
-                        semaphore.acquire();
-                        document = downloader.download(url);
-                    } finally {
-                        semaphore.release();
-                    }
-                    success.add(url);
-                    if (depth > 1) {
-                        phaser.register();
-                        extractService.submit(() -> {
-                            try {
-                                for (String inner : document.extractLinks()) {
-                                    if (usedLinks.add(inner)) {
-                                        concurrentDownload(inner, depth - 1, success, errors, usedLinks, phaser, requiredHosts);
-                                    }
-                                }
-                            } catch (IOException e) {
-                                System.err.println("Unexpected error occurred while extracting links: " + e.getMessage());
-                            } finally {
-                                phaser.arrive();
-                            }
-                        });
-                    }
-                } catch (IOException e) {
-                    errors.put(url, e);
-                } catch (InterruptedException e) {
-                    System.err.println("Unexpected error occurred while extracting links: " + e.getMessage());
-                } finally {
-                    phaser.arrive();
+            downloadService.execute(() -> {
+                Document document = downloadDocument(url, hosts, success, errors);
+                if (document != null && depth > 1) {
+                    phaser.register();
+                    extractService.submit(() -> {
+                        extractLinks(extracted, document);
+                        phaser.arrive();
+                    });
                 }
-
+                phaser.arrive();
             });
-
-        } catch (IOException e) {
-            errors.put(url, e);
+        }
+        phaser.arriveAndAwaitAdvance();
+        if (depth > 1) {
+            Set<String> urlQueueNext = extracted.stream().filter(url -> !usedUrls.containsKey(url)).collect(Collectors.toSet());
+            breadthDownload(urlQueueNext, depth - 1, hosts, usedUrls, success, errors);
         }
     }
 
+    private Document downloadDocument(final String url,
+                                      final List<String> hosts,
+                                      final Set<String> success,
+                                      final Map<String, IOException> errors) {
+        try {
+            String host = URLUtils.getHost(url);
+            if (hosts != null && !hosts.contains(host)) {
+                return null;
+            }
+            Document document;
+            Semaphore hostSemaphore = hostSemaphores.computeIfAbsent(host, h -> new Semaphore(hostDownloadsLimit));
+            try {
+                hostSemaphore.acquire();
+                document = downloader.download(url);
+            } catch (InterruptedException e) {
+                System.err.println("Unexpected error occurred while downloading document: " + e.getMessage());
+                return null;
+            } finally {
+                hostSemaphore.release();
+            }
+            success.add(url);
+            return document;
+        } catch (IOException e) {
+            errors.put(url, e);
+            return null;
+        }
+    }
+
+    private void extractLinks(final Set<String> extracted,
+                              final Document document) {
+        try {
+            extracted.addAll(document.extractLinks());
+        } catch (IOException e) {
+            System.err.println("Unexpected error occurred while extracting links: " + e.getMessage());
+        }
+    }
 
     @Override
     public void close() {
         downloadService.shutdownNow();
         extractService.shutdownNow();
     }
+
+    private final Downloader downloader;
+    private final int hostDownloadsLimit;
+
+    private final ExecutorService downloadService, extractService;
+
+    private final ConcurrentMap<String, Semaphore> hostSemaphores = new ConcurrentHashMap<>();
 }
