@@ -52,41 +52,45 @@ public class WebCrawler implements AdvancedCrawler {
 
     @Override
     public Result download(String url, int depth, List<String> hosts) {
-        Set<String> success = ConcurrentHashMap.newKeySet();
-        ConcurrentMap<String, IOException> errors = new ConcurrentHashMap<>();
-        ConcurrentMap<String, Boolean> usedUrls = new ConcurrentHashMap<>();
         Set<String> urlQueue = Set.of(url);
-        breadthDownload(urlQueue, depth, hosts, usedUrls, success, errors);
-        return new Result(new ArrayList<>(success), errors);
+        BreadthDownloader breadthDownloader = new BreadthDownloader();
+        breadthDownloader.run(urlQueue, depth, hosts);
+        return breadthDownloader.getResult();
     }
 
-    private void breadthDownload(final Set<String> urlQueue,
-                                 final int depth,
-                                 final List<String> hosts,
-                                 final ConcurrentMap<String, Boolean> usedUrls,
-                                 final Set<String> success,
-                                 final ConcurrentMap<String, IOException> errors) {
-        Set<String> extracted = ConcurrentHashMap.newKeySet();
-        Phaser phaser = new Phaser(1);
-        for (String url : urlQueue) {
-            usedUrls.put(url, true);
-            phaser.register();
-            downloadService.execute(() -> {
-                Document document = downloadDocument(url, hosts, success, errors);
-                if (document != null && depth > 1) {
-                    phaser.register();
-                    extractService.submit(() -> {
-                        extractLinks(extracted, document);
-                        phaser.arrive();
-                    });
-                }
-                phaser.arrive();
-            });
+    private class BreadthDownloader {
+        private final ConcurrentMap<String, Boolean> usedUrls = new ConcurrentHashMap<>();
+        private final Set<String> success = ConcurrentHashMap.newKeySet();
+        private final ConcurrentMap<String, IOException> errors = new ConcurrentHashMap<>();
+
+
+        private void run(final Set<String> urlQueue, final int depth, final List<String> hosts) {
+            Set<String> extracted = ConcurrentHashMap.newKeySet();
+            Phaser phaser = new Phaser(1);
+            for (String url : urlQueue) {
+                usedUrls.put(url, true);
+                phaser.register();
+                downloadService.execute(() -> {
+                    Document document = downloadDocument(url, hosts, success, errors);
+                    if (document != null && depth > 1) {
+                        phaser.register();
+                        extractService.submit(() -> {
+                            extractLinks(extracted, document);
+                            phaser.arrive();
+                        });
+                    }
+                    phaser.arrive();
+                });
+            }
+            phaser.arriveAndAwaitAdvance();
+            if (depth > 1) {
+                Set<String> urlQueueNext = extracted.stream().filter(url -> !usedUrls.containsKey(url)).collect(Collectors.toSet());
+                run(urlQueueNext, depth - 1, hosts);
+            }
         }
-        phaser.arriveAndAwaitAdvance();
-        if (depth > 1) {
-            Set<String> urlQueueNext = extracted.stream().filter(url -> !usedUrls.containsKey(url)).collect(Collectors.toSet());
-            breadthDownload(urlQueueNext, depth - 1, hosts, usedUrls, success, errors);
+
+        private Result getResult() {
+            return new Result(new ArrayList<>(success), errors);
         }
     }
 
