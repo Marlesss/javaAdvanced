@@ -114,18 +114,17 @@ public class WebCrawler implements AdvancedCrawler {
             }
         }
 
+        private void extractLinks(final Set<String> extracted,
+                                  final Document document) {
+            try {
+                extracted.addAll(document.extractLinks());
+            } catch (IOException e) {
+                System.err.println("Unexpected error occurred while extracting links: " + e.getMessage());
+            }
+        }
 
         private Result getResult() {
             return new Result(new ArrayList<>(success), errors);
-        }
-    }
-
-    private void extractLinks(final Set<String> extracted,
-                              final Document document) {
-        try {
-            extracted.addAll(document.extractLinks());
-        } catch (IOException e) {
-            System.err.println("Unexpected error occurred while extracting links: " + e.getMessage());
         }
     }
 
