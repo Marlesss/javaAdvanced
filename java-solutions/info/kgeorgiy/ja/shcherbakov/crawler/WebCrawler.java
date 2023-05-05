@@ -63,7 +63,6 @@ public class WebCrawler implements AdvancedCrawler {
         private final Set<String> success = ConcurrentHashMap.newKeySet();
         private final ConcurrentMap<String, IOException> errors = new ConcurrentHashMap<>();
 
-
         private void run(final Set<String> urlQueue, final int depth, final List<String> hosts) {
             Set<String> extracted = ConcurrentHashMap.newKeySet();
             Phaser phaser = new Phaser(1);
@@ -71,7 +70,7 @@ public class WebCrawler implements AdvancedCrawler {
                 usedUrls.put(url, true);
                 phaser.register();
                 downloadService.execute(() -> {
-                    Document document = downloadDocument(url, hosts, success, errors);
+                    Document document = downloadDocument(url, hosts);
                     if (document != null && depth > 1) {
                         phaser.register();
                         extractService.submit(() -> {
@@ -89,36 +88,35 @@ public class WebCrawler implements AdvancedCrawler {
             }
         }
 
+        private Document downloadDocument(final String url,
+                                          final List<String> hosts) {
+            try {
+                String host = URLUtils.getHost(url);
+                if (hosts != null && !hosts.contains(host)) {
+                    return null;
+                }
+                Document document;
+                Semaphore hostSemaphore = hostSemaphores.computeIfAbsent(host, h -> new Semaphore(hostDownloadsLimit));
+                try {
+                    hostSemaphore.acquire();
+                    document = downloader.download(url);
+                } catch (InterruptedException e) {
+                    System.err.println("Unexpected error occurred while downloading document: " + e.getMessage());
+                    return null;
+                } finally {
+                    hostSemaphore.release();
+                }
+                success.add(url);
+                return document;
+            } catch (IOException e) {
+                errors.put(url, e);
+                return null;
+            }
+        }
+
+
         private Result getResult() {
             return new Result(new ArrayList<>(success), errors);
-        }
-    }
-
-    private Document downloadDocument(final String url,
-                                      final List<String> hosts,
-                                      final Set<String> success,
-                                      final Map<String, IOException> errors) {
-        try {
-            String host = URLUtils.getHost(url);
-            if (hosts != null && !hosts.contains(host)) {
-                return null;
-            }
-            Document document;
-            Semaphore hostSemaphore = hostSemaphores.computeIfAbsent(host, h -> new Semaphore(hostDownloadsLimit));
-            try {
-                hostSemaphore.acquire();
-                document = downloader.download(url);
-            } catch (InterruptedException e) {
-                System.err.println("Unexpected error occurred while downloading document: " + e.getMessage());
-                return null;
-            } finally {
-                hostSemaphore.release();
-            }
-            success.add(url);
-            return document;
-        } catch (IOException e) {
-            errors.put(url, e);
-            return null;
         }
     }
 
