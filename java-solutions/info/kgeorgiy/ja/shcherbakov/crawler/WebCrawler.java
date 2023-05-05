@@ -129,8 +129,20 @@ public class WebCrawler implements AdvancedCrawler {
 
     @Override
     public void close() {
-        downloadService.shutdownNow();
-        extractService.shutdownNow();
+        shutdownNow(downloadService);
+        shutdownNow(extractService);
+    }
+
+    private static void shutdownNow(ExecutorService service) {
+        service.shutdownNow();
+        while (true) {
+            try {
+                if (service.awaitTermination(100, TimeUnit.MILLISECONDS)) {
+                    break;
+                }
+            } catch (InterruptedException ignored) {
+            }
+        }
     }
 
     private final Downloader downloader;
