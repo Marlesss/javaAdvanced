@@ -1,6 +1,7 @@
 package info.kgeorgiy.ja.shcherbakov.walk;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -35,7 +36,7 @@ public class Walk {
             System.err.println("Can't make the directories on the way to the output file: " + e.getMessage());
             return;
         }
-        try (Reader inputReader = new FileReader(inputFile);
+        try (Reader inputReader = new FileReader(inputFile, StandardCharsets.UTF_8);
              BufferedReader inputBuffered = new BufferedReader(inputReader)) {
             try (BufferedWriter writerBuffered = Files.newBufferedWriter(outputPath)) {
                 this.reader = inputBuffered;
