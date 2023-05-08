@@ -103,6 +103,8 @@ public class Walk {
             return digest.digest();
         } catch (IOException e) {
             System.err.println("Error occurred while calculating hash of file (" + path + "):" + e.getMessage());
+        } catch (SecurityException e) {
+            System.err.println("Access denied (" + path + "):" + e.getMessage());
         }
         return null;
     }
