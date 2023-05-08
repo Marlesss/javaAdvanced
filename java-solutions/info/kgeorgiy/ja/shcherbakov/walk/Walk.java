@@ -35,6 +35,9 @@ public class Walk {
         } catch (InvalidPathException | IOException e) {
             System.err.println("Can't make the directories on the way to the output file: " + e.getMessage());
             return;
+        } catch (SecurityException e) {
+            System.err.println("Access denied while trying to make directories on the way to the output file:" + e.getMessage());
+            return;
         }
         try (Reader inputReader = new FileReader(inputFile, StandardCharsets.UTF_8);
              BufferedReader inputBuffered = new BufferedReader(inputReader)) {
@@ -47,6 +50,8 @@ public class Walk {
                 System.err.println("Output file not found: " + e.getMessage());
             } catch (IOException e) {
                 System.err.println("Error occurred while working with output file: " + e.getMessage());
+            } catch (SecurityException e) {
+                System.err.println("Access denied (" + outputFile + "):" + e.getMessage());
             } catch (NoSuchAlgorithmException e) {
                 System.err.println("Can't work with SHA-256 hashing algorithm: " + e.getMessage());
             }
@@ -54,6 +59,8 @@ public class Walk {
             System.err.println("Input file not found: " + e.getMessage());
         } catch (IOException e) {
             System.err.println("Error occurred while working with input file: " + e.getMessage());
+        } catch (SecurityException e) {
+            System.err.println("Access denied (" + inputFile + "):" + e.getMessage());
         }
     }
 
@@ -65,6 +72,8 @@ public class Walk {
             }
         } catch (IOException e) {
             System.err.println("Error occurred while working with files: " + e.getMessage());
+        } catch (SecurityException e) {
+            System.err.println("Access denied:" + e.getMessage());
         }
     }
 
@@ -86,6 +95,8 @@ public class Walk {
             writeHash(getFileHash(filePath), filePath.toString());
         } catch (IOException e) {
             System.err.println("Error occurred while working with output file: " + e.getMessage());
+        } catch (SecurityException e) {
+            System.err.println("Access denied:" + e.getMessage());
         }
     }
 

@@ -27,6 +27,8 @@ public class RecursiveWalk extends Walk {
                         .forEach(super::handleFilePath);
             } catch (IOException e) {
                 System.err.println("Error occurred while getting files in directory: " + e.getMessage());
+            } catch (SecurityException e) {
+                System.err.println("Access denied (" + path + "):" + e.getMessage());
             }
             return;
         }
