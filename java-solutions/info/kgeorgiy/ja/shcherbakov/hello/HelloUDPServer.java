@@ -1,4 +1,4 @@
-package info.kgeorgiy.ja.shcherbakov.net;
+package info.kgeorgiy.ja.shcherbakov.hello;
 
 import info.kgeorgiy.java.advanced.hello.HelloServer;
 
