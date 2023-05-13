@@ -21,10 +21,16 @@ public class HelloUDPServer implements HelloServer {
             System.err.println("HelloUDPServer port workThreads");
             return;
         }
-        int port = Integer.parseInt(args[0]);
-        int workThreads = Integer.parseInt(args[1]);
+        try {
+            int port = Integer.parseInt(args[0]);
+            int workThreads = Integer.parseInt(args[1]);
 
-        new HelloUDPServer().start(port, workThreads);
+            new HelloUDPServer().start(port, workThreads);
+        } catch (NumberFormatException e) {
+            System.err.println("port and workThreads must be integer");
+            System.err.println("HelloUDPServer port workThreads");
+            System.err.println(e.getMessage());
+        }
     }
 
     private void requestHandler(Function<DatagramPacket, DatagramPacket> requestHandler) {
@@ -34,7 +40,6 @@ public class HelloUDPServer implements HelloServer {
                 socket.receive(request);
                 DatagramPacket response = requestHandler.apply(request);
                 socket.send(response);
-//                System.err.println("SENT");
             } catch (SocketException e) {
                 System.err.println("Socket error: " + e.getMessage());
             } catch (SocketTimeoutException ignored) {
@@ -75,14 +80,6 @@ public class HelloUDPServer implements HelloServer {
     public void close() {
         if (started) {
             service.shutdownNow();
-            while (true) {
-                try {
-                    if (service.awaitTermination(RECEIVE_TIMEOUT, TimeUnit.MILLISECONDS)) {
-                        break;
-                    }
-                } catch (InterruptedException ignored) {
-                }
-            }
             socket.close();
         }
     }
