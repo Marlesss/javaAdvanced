@@ -3,14 +3,10 @@ package info.kgeorgiy.ja.shcherbakov.hello;
 import info.kgeorgiy.java.advanced.hello.HelloServer;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 
@@ -34,12 +30,18 @@ public class HelloUDPServer implements HelloServer {
     }
 
     private void requestHandler(Function<DatagramPacket, DatagramPacket> requestHandler) {
-        while (!socket.isClosed() && !Thread.interrupted()) {
+        while (!socket.isClosed()) {
+            if (Thread.interrupted()) {
+                Thread.currentThread().interrupt();
+                break;
+            }
             try {
                 DatagramPacket request = UDPUtilities.getResponsePacket(socket);
                 socket.receive(request);
                 DatagramPacket response = requestHandler.apply(request);
                 socket.send(response);
+            } catch (PortUnreachableException e) {
+                System.err.println("Socket is connected to a currently unreachable destination: " + e.getMessage());
             } catch (SocketException e) {
                 System.err.println("Socket error: " + e.getMessage());
             } catch (SocketTimeoutException ignored) {
@@ -47,7 +49,6 @@ public class HelloUDPServer implements HelloServer {
                 System.err.println("IO exception: " + e.getMessage());
             }
         }
-        Thread.currentThread().interrupt();
     }
 
     @Override
@@ -79,13 +80,13 @@ public class HelloUDPServer implements HelloServer {
     @Override
     public void close() {
         if (started) {
-            service.shutdownNow();
             socket.close();
+            service.shutdownNow();
         }
     }
 
     private boolean started = false;
-    private static final int RECEIVE_TIMEOUT = 10;
+    private static final int RECEIVE_TIMEOUT = 100;
     private ExecutorService service;
     private DatagramSocket socket;
 }

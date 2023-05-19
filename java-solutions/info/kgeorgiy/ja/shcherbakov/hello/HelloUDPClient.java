@@ -64,7 +64,7 @@ public class HelloUDPClient implements HelloClient {
         }
     }
 
-    private String getMessage(String prefix, int threadNumber, int requestNumber) {
+    private static String getMessage(String prefix, int threadNumber, int requestNumber) {
         return String.format("%s%d_%d", prefix, threadNumber, requestNumber);
     }
 
@@ -82,6 +82,8 @@ public class HelloUDPClient implements HelloClient {
                     break;
                 }
             } catch (SocketTimeoutException ignored) {
+            } catch (PortUnreachableException e) {
+                System.err.println("Socket is connected to a currently unreachable destination: " + e.getMessage());
             } catch (SocketException e) {
                 System.err.println("Socket exception: " + e.getMessage());
             } catch (IOException e) {
