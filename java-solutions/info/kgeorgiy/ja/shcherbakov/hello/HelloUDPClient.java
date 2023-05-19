@@ -19,12 +19,18 @@ public class HelloUDPClient implements HelloClient {
             System.err.println("HelloUDPClient hostAddress hostPort requestPrefix threadsNumber requestsNumber");
             return;
         }
-        String hostName = args[0];
-        int hostPort = Integer.parseInt(args[1]);
-        String requestPrefix = args[2];
-        int threadsNumber = Integer.parseInt(args[3]);
-        int requestsNumber = Integer.parseInt(args[4]);
-        new HelloUDPClient().run(hostName, hostPort, requestPrefix, threadsNumber, requestsNumber);
+        try {
+            String hostName = args[0];
+            int hostPort = Integer.parseInt(args[1]);
+            String requestPrefix = args[2];
+            int threadsNumber = Integer.parseInt(args[3]);
+            int requestsNumber = Integer.parseInt(args[4]);
+            new HelloUDPClient().run(hostName, hostPort, requestPrefix, threadsNumber, requestsNumber);
+        } catch (NumberFormatException e) {
+            System.err.println("Host port, threads number and requests number must be integer");
+            System.err.println("HelloUDPClient hostAddress hostPort requestPrefix threadsNumber requestsNumber");
+            System.err.println(e.getMessage());
+        }
     }
 
     @Override
@@ -42,9 +48,9 @@ public class HelloUDPClient implements HelloClient {
             System.err.println("Run thread was interrupted");
             System.err.println("Shutdown all senders...");
             System.err.println(e.getMessage());
-            shutdown(senders);
+        } finally {
+            senders.shutdownNow();
         }
-        senders.shutdownNow();
     }
 
     private void awaitSenders(List<Future<?>> futures) throws InterruptedException {
@@ -56,19 +62,6 @@ public class HelloUDPClient implements HelloClient {
             }
         }
     }
-
-    private void shutdown(ExecutorService senders) {
-        senders.shutdownNow();
-        while (true) {
-            try {
-                if (senders.awaitTermination(RESPONSE_TIMEOUT, TimeUnit.MILLISECONDS)) {
-                    break;
-                }
-            } catch (InterruptedException ignored) {
-            }
-        }
-    }
-
 
     private String getMessage(String prefix, int threadNumber, int requestNumber) {
         return String.format("%s%d_%d", prefix, threadNumber, requestNumber);
@@ -152,9 +145,6 @@ public class HelloUDPClient implements HelloClient {
                     if (Character.isDigit(response.charAt(i))) {
                         int j = i;
                         while (j >= 0 && Character.isDigit(response.charAt(j))) {
-                            j--;
-                        }
-                        if (Character.isDigit(j)) {
                             j--;
                         }
                         integers.add(Integer.parseInt(response.substring(j + 1, i + 1)));
