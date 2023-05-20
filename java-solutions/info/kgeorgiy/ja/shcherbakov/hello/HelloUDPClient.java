@@ -98,7 +98,7 @@ public class HelloUDPClient implements HelloClient {
                     System.out.println(message);
                     byte[] data = message.getBytes(StandardCharsets.UTF_8);
                     DatagramPacket requestPacket = UDPUtilities.getRequestPacket(data, serverSocketAddress);
-                    sendMessage(socket, requestPacket, idCheck(prefix, threadNumber, i));
+                    sendMessage(socket, requestPacket, messageCheck(prefix, threadNumber, i));
                 }
             } catch (SocketException e) {
                 System.err.println("Socket exception while initialize: " + e.getMessage());
