@@ -1,4 +1,4 @@
-package info.kgeorgiy.ja.shcherbakov.rmi;
+package info.kgeorgiy.ja.shcherbakov.bank;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -96,10 +96,10 @@ public final class BankWebServer {
     private static final String ACTION_STOP = "Stop";
 
     private final Map<String, App> apps = Map.ofEntries(
-            app("Client 2", "java", "-cp", CLASSPATH, "info.kgeorgiy.ja.shcherbakov.rmi.Client", "marles123", "acc1"),
-            app("Client 3", "java", "-cp", CLASSPATH, "info.kgeorgiy.ja.shcherbakov.rmi.Client", "marles123", "acc2"),
-            app("Server 1", "java", "-cp", CLASSPATH, "info.kgeorgiy.ja.shcherbakov.rmi.Server", "8881"),
-            app("Server 2", "java", "-cp", CLASSPATH, "info.kgeorgiy.ja.shcherbakov.rmi.Server", "8882"),
+            app("Client 2", "java", "-cp", CLASSPATH, "info.kgeorgiy.ja.shcherbakov.bank.RemoteClient", "Alex", "Sherb", "marles123", "acc1", "150"),
+            app("Client 3", "java", "-cp", CLASSPATH, "info.kgeorgiy.ja.shcherbakov.bank.RemoteClient", "Alex", "Sherb", "marles123", "acc2", "150"),
+            app("Server 1", "java", "-cp", CLASSPATH, "info.kgeorgiy.ja.shcherbakov.bank.Server", "8881"),
+            app("Server 2", "java", "-cp", CLASSPATH, "info.kgeorgiy.ja.shcherbakov.bank.Server", "8882"),
             app("Registry", "rmiregistry"),
             app("Registry CP", "rmiregistry", "-J--class-path=" + CLASSPATH)
     );

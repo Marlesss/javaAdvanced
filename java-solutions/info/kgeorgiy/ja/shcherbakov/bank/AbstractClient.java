@@ -1,4 +1,4 @@
-package info.kgeorgiy.ja.shcherbakov.rmi;
+package info.kgeorgiy.ja.shcherbakov.bank;
 
 import java.net.MalformedURLException;
 import java.rmi.Naming;
