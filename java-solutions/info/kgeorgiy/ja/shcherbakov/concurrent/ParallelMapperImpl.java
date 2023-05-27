@@ -26,7 +26,9 @@ public class ParallelMapperImpl implements ParallelMapper {
                             }
                             job = jobsQueue.poll();
                         }
-                        job.run();
+                        if (job != null) {
+                            job.run();
+                        }
                     }
                 } catch (InterruptedException ignored) {
                 } finally {
