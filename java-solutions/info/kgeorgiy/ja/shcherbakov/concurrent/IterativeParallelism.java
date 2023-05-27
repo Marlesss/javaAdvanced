@@ -56,15 +56,12 @@ public class IterativeParallelism implements ListIP {
             offset += actionCount;
         }
 
-        if (parallelMapper != null) {
-            result = parallelMapper.map(getHandler(initResult, threadAction), pieces);
-        } else {
+        if (parallelMapper == null) {
             result = new ArrayList<>(Collections.nCopies(threads, null));
             Thread[] threadsArr = new Thread[threads];
             for (int i = 0; i < threads; i++) {
                 int index = i;
-                threadsArr[i] = new Thread(() -> result.set(index,
-                        getHandler(initResult, threadAction).apply(pieces.get(index))));
+                threadsArr[i] = new Thread(() -> result.set(index, getHandler(initResult, threadAction).apply(pieces.get(index))));
                 threadsArr[i].start();
             }
             for (int i = 0; i < threads; i++) {
@@ -73,6 +70,8 @@ public class IterativeParallelism implements ListIP {
                     throw new InterruptedException();
                 }
             }
+        } else {
+            result = parallelMapper.map(getHandler(initResult, threadAction), pieces);
         }
 
         R answer = initResult.get();
