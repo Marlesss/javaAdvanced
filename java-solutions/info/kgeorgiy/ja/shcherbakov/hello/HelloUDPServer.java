@@ -51,9 +51,6 @@ public class HelloUDPServer implements HelloServer {
 
     @Override
     public void start(int port, int threads) {
-        if (started) {
-            throw new RuntimeException("This server already started");
-        }
         try {
             socket = new DatagramSocket(port);
             socket.setSoTimeout(RECEIVE_TIMEOUT);
@@ -61,7 +58,6 @@ public class HelloUDPServer implements HelloServer {
             for (int i = 0; i < threads; i++) {
                 service.submit(() -> requestHandler(this::helloResponse));
             }
-            started = true;
         } catch (SocketException e) {
             System.err.println("Failed to start server: unable to create socket: " + e.getMessage());
         }
@@ -77,13 +73,14 @@ public class HelloUDPServer implements HelloServer {
 
     @Override
     public void close() {
-        if (started) {
-            service.shutdownNow();
+        if (socket != null) {
             socket.close();
+        }
+        if (service != null) {
+            service.shutdownNow();
         }
     }
 
-    private boolean started = false;
     private static final int RECEIVE_TIMEOUT = 10;
     private ExecutorService service;
     private DatagramSocket socket;
